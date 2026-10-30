@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petal Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Golos+Text:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #FBF7F5;
+    --block: #F3E8E9;
+    --block2: #ECE5F4;
+    --ink: #372B32;
+    --muted: #6B5C63;
+    --pink: #C67783;
+    --pink-deep: #A8586A;
+    --lilac: #8874A6;
+    --line: #E7D9DA;
+    --glass-strong: #FFFFFF;
+    --slot: #ECE5F4;
+    --head: "Unbounded", system-ui, sans-serif;
+    --odd: 4px 22px 4px 22px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    font: 400 14px/1.5 "Golos Text", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    padding: 28px 16px 40px;
+  }
+  button, select, input { font: inherit; color: inherit; }
+
+  /* ---------- window ---------- */
+  .window {
+    max-width: 1320px; margin: 0 auto;
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .titlebar {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    height: 46px; padding: 0 18px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .lights { position: absolute; left: 18px; display: flex; gap: 8px; }
+  .lights i { width: 13px; height: 13px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  .lights i:nth-child(1) { background: #C67783; }
+  .lights i:nth-child(2) { background: #E7D9DA; }
+  .lights i:nth-child(3) { background: #8874A6; }
+  .titlebar b { font: 600 13px var(--head); }
+  .titlebar b span { color: var(--muted); font-weight: 600; }
+
+  .content { padding: 18px 22px 22px; }
+
+  /* ---------- header ---------- */
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 44px; height: 44px; border-radius: 50%; flex: none;
+    background: var(--block);
+    display: grid; place-items: center;
+  }
+  .crumbs { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .crumbs b { color: var(--ink); }
+  h1 { margin: 0; font: 600 24px/1.25 var(--head); letter-spacing: -.01em; }
+  h1 em { font-style: normal; }
+  .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .status {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px; border-radius: 999px;
+    background: var(--block);
+    font-size: 12.5px; color: var(--muted); font-weight: 500;
+    max-width: 420px;
+  }
+  .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lilac); opacity: .5; flex: none; }
+  .status.busy .dot { background: var(--pink); opacity: 1; animation: pulse 1s ease-in-out infinite; }
+  .status span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @keyframes pulse { 50% { transform: scale(1.6); opacity: .5; } }
+
+  .btn {
+    border: 0; cursor: pointer; border-radius: 999px;
+    padding: 10px 18px; font-weight: 600; font-size: 13.5px;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform .15s ease, box-shadow .15s ease, opacity .15s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary {
+    color: #fff;
+    background: var(--pink-deep);
+  }
+  .btn-primary:not(:disabled):hover { background: #964c5d; }
+  .btn-ghost { background: var(--glass-strong); border: 1px solid var(--line); }
+
+  /* ---------- stats ---------- */
+  .stats {
+    margin-top: 16px;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--block); border-radius: var(--odd);
+    position: relative; overflow: hidden;
+  }
+  .stat { padding: 12px 18px 14px; border-left: 1px solid var(--line); }
+  .stat:first-child { border-left: 0; }
+  .stat small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .stat b { display: block; font: 600 24px/1.3 var(--head); font-variant-numeric: tabular-nums; }
+  .stat:first-child b { color: var(--pink); }
+  .stat b.bump { animation: bump .25s ease; }
+  @keyframes bump { 40% { transform: translateY(-2px); color: var(--pink); } }
+  .progress { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--pink-deep); transition: width .3s ease; }
+
+  /* ---------- board ---------- */
+  .board { margin-top: 16px; display: grid; grid-template-columns: 1fr 300px 1fr; gap: 16px; align-items: start; }
+  .col-h { display: flex; align-items: center; gap: 6px; font: 600 12px var(--head); color: var(--ink); margin: 0 2px 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .col-h .n { margin-left: auto; color: var(--muted); font: 500 12px "Golos Text", sans-serif; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 8px 9px; transition: transform .2s ease, border-color .2s;
+  }
+  .card.pop { animation: pop .3s ease; }
+  @keyframes pop { 40% { transform: scale(1.025); border-color: var(--pink); } }
+  .review .card.has { cursor: pointer; }
+  .review .card.has:hover { border-color: var(--pink); transform: translateY(-1px); }
+  .card-h { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .chk { width: 13px; height: 13px; border-radius: 4px; border: 1.5px solid var(--line); display: grid; place-items: center; flex: none; transition: .2s; }
+  .card.has .chk { background: var(--pink); border-color: var(--pink); }
+  .card.has .chk::after { content: ""; width: 6px; height: 3px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+  .card-h .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-h .ct { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .card.has .ct { color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+  .slot { aspect-ratio: 1; border-radius: 4px; background: var(--slot); background-size: cover; background-position: center; position: relative; overflow: hidden; }
+  .slot.filled { animation: land .25s ease; }
+  @keyframes land { from { transform: scale(1.25); } }
+  .vid::after {
+    content: ""; position: absolute; right: 3px; bottom: 3px;
+    border-left: 5px solid #fff; border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+    filter: drop-shadow(0 0 1px rgba(0,0,0,.6));
+  }
+  .noimg { display: grid; place-items: center; font-size: 7.5px; font-weight: 700; color: var(--pink-deep); background: var(--block); }
+
+  /* ---------- stage ---------- */
+  .center { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .stage {
+    position: relative; height: 430px; border-radius: 18px;
+    background: var(--block2); border-radius: var(--odd);
+  }
+  .flower { position: absolute; left: 50%; top: 50%; width: 170px; height: 170px; margin: -85px 0 0 -85px; opacity: .8; animation: spin 40s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hint { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; padding: 0 18px; font-size: 12.5px; color: var(--muted); font-weight: 400; transition: opacity .3s; }
+  .hint b { color: var(--ink); font-weight: 600; }
+  .pile { position: absolute; inset: 0; }
+  .tile {
+    position: absolute; width: 34px; height: 34px; border-radius: 7px;
+    background: var(--block);
+    background-size: cover; background-position: center;
+    border: 1.5px solid #fff;
+    box-shadow: 0 1px 3px rgba(55, 43, 50, .25);
+    transform: rotate(var(--r, 0deg));
+  }
+  .tile.img { box-shadow: 0 1px 3px rgba(55, 43, 50, .35); }
+  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+  #fx .tile { left: 0; top: 0; transform: none; }
+
+  .side-card { background: var(--block); border-radius: var(--odd); padding: 14px; }
+  .opt { display: flex; gap: 9px; align-items: flex-start; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+  .opt input { accent-color: var(--pink); margin: 2px 0 0; width: 15px; height: 15px; flex: none; }
+  .opt small { display: block; color: var(--muted); font-weight: 400; }
+  .apply { width: 100%; justify-content: center; padding: 13px 18px; font-size: 14px; margin-top: 12px; border-radius: 4px 18px 4px 18px; }
+  .note { font-size: 11.5px; color: var(--muted); text-align: center; margin: 2px 6px 0; }
+
+  /* ---------- modal ---------- */
+  .modal { position: fixed; inset: 0; z-index: 80; display: none; place-items: center; padding: 20px; background: rgba(55, 43, 50, .35); }
+  .modal.open { display: grid; }
+  .sheet { width: min(860px, 100%); max-height: min(720px, 90vh); display: flex; flex-direction: column; background: var(--bg); border-radius: 4px 22px 4px 22px; overflow: hidden; }
+  .sheet-h { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  .sheet-h h2 { margin: 0; font: 600 16px var(--head); }
+  .sheet-h h2 em { font-style: normal; }
+  .sheet-h .x { margin-left: auto; width: 34px; height: 34px; padding: 0; justify-content: center; }
+  .sheet-grid { padding: 14px 18px; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .pick { position: relative; aspect-ratio: 1; border-radius: 10px; background-size: cover; background-position: center; cursor: pointer; border: 0; padding: 0; outline: 3px solid transparent; outline-offset: -3px; }
+  .pick.noimg { font-size: 11px; }
+  .pick.sel { outline-color: var(--pink); }
+  .pick.sel::before { content: "✓"; position: absolute; top: 5px; left: 5px; width: 20px; height: 20px; border-radius: 50%; background: var(--pink); color: #fff; font-size: 12px; display: grid; place-items: center; }
+  .pick span { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 6px 4px; font-size: 9.5px; color: #fff; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: linear-gradient(transparent, rgba(55, 43, 50, .7)); border-radius: 0 0 10px 10px; }
+  .pick.noimg span { color: var(--muted); background: none; }
+  .sheet-f { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); font-weight: 500; }
+  .sheet-f select { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-weight: 600; }
+  .sheet-f .sp { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; z-index: 90; transform: translate(-50%, 30px); opacity: 0;
+    background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 4px 18px 4px 18px; font-size: 13px; font-weight: 500;
+    transition: .3s ease; pointer-events: none; max-width: calc(100vw - 32px); text-align: center;
+  }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; }
+  .petal { position: fixed; z-index: 60; width: 14px; height: 14px; border-radius: 70% 0 70% 0; pointer-events: none; }
+
+  @media (max-width: 1100px) {
+    .board { grid-template-columns: 1fr; }
+    .center { position: static; order: -1; }
+    .stage { height: 340px; }
+  }
+  @media (max-width: 640px) {
+    body { padding: 12px 10px 24px; }
+    .content { padding: 14px; }
+    h1 { font-size: 18px; }
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .stat:nth-child(4) { border-left: 0; }
+    .stat { border-top: 1px solid var(--line); }
+    .stat:nth-child(-n+3) { border-top: 0; }
+    .stat b { font-size: 18px; }
+    .titlebar b span { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <b>Petal Sort <span>· розбираю свої фото й відео</span></b>
+  </div>
+
+  <div class="content">
+    <header>
+      <div class="brand">
+        <div class="logo"><svg width="26" height="26" viewBox="-50 -50 100 100"><use href="#flower"/></svg></div>
+        <div>
+          <div class="crumbs"><b>Petal Sort</b> / <span id="crumb">готова</span></div>
+          <h1 id="title">Розберімо твою <em>папку</em></h1>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="status" id="status"><i class="dot"></i><span id="statusText">Обери папку з фото й відео</span></div>
+        <button class="btn btn-primary" id="pick">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          Обрати папку
+        </button>
+        <button class="btn btn-primary" id="sort" disabled>Сортувати</button>
+      </div>
+    </header>
+
+    <div class="stats">
+      <div class="stat"><small>Всього файлів</small><b id="st-total">0</b></div>
+      <div class="stat"><small>Відео</small><b id="st-video">0</b></div>
+      <div class="stat"><small>Фото</small><b id="st-photo">0</b></div>
+      <div class="stat"><small>Створено папок</small><b id="st-folders">0</b></div>
+      <div class="stat"><small>Дублікатів</small><b id="st-dups">0</b></div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <div class="board" id="board">
+      <section>
+        <div class="col-h">Фото <span class="n" id="n-photo"></span></div>
+        <div class="cards" id="cards-photo"></div>
+      </section>
+
+      <div class="center">
+        <div class="stage" id="stage">
+          <svg class="flower" viewBox="-50 -50 100 100"><use href="#flower"/></svg>
+          <div class="pile" id="pile"></div>
+          <div class="hint" id="hint">Обери папку — я розкладу фото й відео по категоріях.<br><b>Усе працює на твоєму комп’ютері</b>, файли нікуди не завантажуються.</div>
+        </div>
+        <div class="card" id="dupCard">
+          <div class="card-h"><i class="chk"></i><span class="nm">Дублікати</span><span class="ct">0</span></div>
+          <div class="grid"></div>
+        </div>
+        <div class="side-card">
+          <label class="opt"><input type="checkbox" id="keep">
+            <span>Залишити оригінали на місці<small>Скопіювати в папки замість переміщення</small></span>
+          </label>
+          <button class="btn btn-primary apply" id="apply" disabled>Розкласти по папках</button>
+          <p class="note" id="applyNote">Спершу я все проаналізую — нічого не переміщую, поки ти не натиснеш.</p>
+        </div>
+      </div>
+
+      <section>
+        <div class="col-h">Відео <span class="n" id="n-video"></span></div>
+        <div class="cards" id="cards-video"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div id="fx"></div>
+
+<div class="modal" id="modal">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-h">
+      <h2 id="mTitle"></h2>
+      <button class="btn btn-ghost x" id="mClose" aria-label="Закрити">✕</button>
+    </div>
+    <div class="sheet-grid" id="mGrid"></div>
+    <div class="sheet-f">
+      <span id="mHint">Натисни на файли, які лежать не там</span>
+      <div class="sp">
+        <span>Перенести в</span>
+        <select id="mTarget"></select>
+        <button class="btn btn-primary" id="mMove" disabled>Перенести</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <radialGradient id="petalGrad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 -6) scale(46)">
+      <stop offset="0" stop-color="#F3E8E9"/>
+      <stop offset=".6" stop-color="#E4B8BF"/>
+      <stop offset="1" stop-color="#C67783"/>
+    </radialGradient>
+    <g id="flower">
+      <g fill="url(#petalGrad)" stroke="#fff" stroke-width="1.2">
+        <ellipse rx="11" ry="21" cy="-22"/>
+        <ellipse rx="11" ry="21" cy="-22" transform="rotate(45)"/>
+        <ellipse rx="11" ry="21" cy="-22" transform="rotate(90)"/>
+        <ellipse rx="11" ry="21" cy="-22" transform="rotate(135)"/>
+        <ellipse rx="11" ry="21" cy="-22" transform="rotate(180)"/>
+        <ellipse rx="11" ry="21" cy="-22" transform="rotate(225)"/>
+        <ellipse rx="11" ry="21" cy="-22" transform="rotate(270)"/>
+        <ellipse rx="11" ry="21" cy="-22" transform="rotate(315)"/>
+      </g>
+      <circle r="9" fill="#fff"/>
+      <circle r="5" fill="#8874A6"/>
+    </g>
+  </defs>
+</svg>
+
+<script type="module">
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
+const MODEL = 'Xenova/clip-vit-base-patch32';
+const OTHER_THRESHOLD = 0.25;   // if the best category is less sure than this, the file goes to "Інше"
+const PILE_MAX = 240;           // how many tiles to draw in the pile
+const SLOTS = 12;               // thumbnails shown in each card
+
+const KIND_FOLDER = { photo: 'Фото', video: 'Відео' };
+const DUP_FOLDER = 'Дублікати';
+
+const PHOTO_EXT = new Set(['jpg', 'jpeg', 'jfif', 'png', 'webp', 'gif', 'heic', 'heif', 'bmp', 'avif', 'tif', 'tiff']);
+const VIDEO_EXT = new Set(['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi', '3gp', 'wmv', 'mts']);
+const SCREEN_RE = /screenshot|screen[ _-]?shot|screen[ _-]?record|знімок екрана|скріншот|скриншот|снимок экрана|запис екрана|record_\d/i;
+
+// Each category: Ukrainian name (also the folder name) + English prompts for the CLIP model.
+// Add, remove or rename categories here.
+const SHARED = {
+  outfits: { name: 'Образи', prompts: ['a mirror selfie showing an outfit', 'a full body fashion photo of a person wearing an outfit', 'a person posing to show their clothes'] },
+  people: { name: 'Люди й друзі', prompts: ['a group photo of friends', 'a photo of several people together', 'friends hanging out'] },
+  food: { name: 'Їжа й напої', prompts: ['a photo of food', 'a photo of a coffee or a drink', 'a meal on a table in a cafe'] },
+  travel: { name: 'Подорожі й місто', prompts: ['a travel photo of a city street', 'a photo of a famous landmark', 'a photo of buildings and architecture', 'a view from an airplane window'] },
+  nature: { name: 'Природа', prompts: ['a landscape photo of nature', 'a photo of the sky and clouds', 'a photo of the sea or a beach', 'a photo of flowers and plants', 'a photo of a forest or mountains'] },
+  pets: { name: 'Тваринки', prompts: ['a photo of a cat', 'a photo of a dog', 'a photo of a pet animal'] },
+  night: { name: 'Вечір і вогні', prompts: ['a photo taken at night with city lights', 'a party at night with neon lights', 'a dark photo with candles or fairy lights'] },
+};
+const CATS = {
+  photo: [
+    { id: 'selfies', name: 'Селфі', prompts: ['a selfie', 'a close-up selfie of a person’s face taken with a phone'] },
+    { id: 'outfits', ...SHARED.outfits },
+    { id: 'people', ...SHARED.people },
+    { id: 'food', ...SHARED.food },
+    { id: 'travel', ...SHARED.travel },
+    { id: 'nature', ...SHARED.nature },
+    { id: 'aesthetic', name: 'Естетика й деталі', prompts: ['an aesthetic photo of a cozy room interior', 'a still life photo of objects on a table', 'a close-up photo of aesthetic details', 'a photo of books, candles and decor'] },
+    { id: 'pets', ...SHARED.pets },
+    { id: 'night', ...SHARED.night },
+    { id: 'docs', name: 'Документи', prompts: ['a photo of a document', 'a photo of a receipt', 'a photo of a page of handwritten notes'] },
+    { id: 'screens', name: 'Скріншоти', prompts: ['a screenshot of a phone screen', 'a screenshot of a website or app', 'a screenshot of a chat conversation'] },
+    { id: 'other', name: 'Інше', prompts: null },
+  ],
+  video: [
+    { id: 'talking', name: 'Говорю в камеру', prompts: ['a person talking to the camera', 'a close-up of a person’s face speaking to the camera', 'a vlogger filming herself'] },
+    { id: 'outfits', ...SHARED.outfits },
+    { id: 'people', ...SHARED.people },
+    { id: 'food', ...SHARED.food },
+    { id: 'travel', ...SHARED.travel },
+    { id: 'nature', ...SHARED.nature },
+    { id: 'aesthetic', name: 'Естетика / b-roll', prompts: ['an aesthetic shot of a cozy room interior', 'a close-up shot of objects and details', 'hands making something on a table'] },
+    { id: 'pets', ...SHARED.pets },
+    { id: 'sport', name: 'Рух і спорт', prompts: ['a person exercising in a gym', 'a person doing sports', 'a person dancing'] },
+    { id: 'night', ...SHARED.night },
+    { id: 'screens', name: 'Записи екрана', prompts: ['a screen recording of a phone', 'a screen recording of a computer app'] },
+    { id: 'other', name: 'Інше', prompts: null },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// State & DOM
+// ---------------------------------------------------------------------------
+const $ = (s) => document.querySelector(s);
+const state = { dir: null, items: [], phase: 'idle', folders: 0, dups: 0, sorted: { photo: 0, video: 0 } };
+const cards = { photo: {}, video: {} };
+let dupCard;
+
+function catOf(kind, id) { return CATS[kind].find((c) => c.id === id); }
+const nf = (n) => n.toLocaleString('uk-UA');
+
+function makeCard(el) {
+  const grid = el.querySelector('.grid');
+  const slots = Array.from({ length: SLOTS }, () => grid.appendChild(Object.assign(document.createElement('i'), { className: 'slot' })));
+  return { el, slots, countEl: el.querySelector('.ct'), count: 0, reserved: 0 };
+}
+
+function buildCards() {
+  for (const kind of ['photo', 'video']) {
+    const host = $('#cards-' + kind);
+    host.innerHTML = '';
+    for (const c of CATS[kind]) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `<div class="card-h"><i class="chk"></i><span class="nm"></span><span class="ct">0</span></div><div class="grid"></div>`;
+      el.querySelector('.nm').textContent = c.name;
+      el.addEventListener('click', () => openModal(kind, c.id));
+      host.appendChild(el);
+      cards[kind][c.id] = makeCard(el);
+    }
+  }
+  const d = $('#dupCard');
+  d.querySelector('.grid').innerHTML = '';
+  d.onclick = () => openModal(null, 'dups');
+  dupCard = makeCard(d);
+}
+
+function setStatus(text, busy = false) {
+  $('#statusText').textContent = text;
+  $('#status').classList.toggle('busy', busy);
+}
+function setStat(id, value) {
+  const el = $('#st-' + id);
+  if (el.textContent === nf(value)) return;
+  el.textContent = nf(value);
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+}
+function setProgress(frac) { $('#progress').style.width = (frac * 100).toFixed(2) + '%'; }
+let toastTimer;
+function toast(text, ms = 4200) {
+  const t = $('#toast');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+const tick = () => new Promise((r) => setTimeout(r, 0));
+const rand = (a, b) => a + Math.random() * (b - a);
+
+function paintThumb(el, it) {
+  el.classList.toggle('vid', it.kind === 'video');
+  if (it.thumb) {
+    el.style.backgroundImage = `url("${it.thumb}")`;
+    el.classList.add('img');
+    el.classList.remove('noimg');
+    el.textContent = '';
+  } else {
+    el.style.backgroundImage = '';
+    el.classList.add('noimg');
+    el.textContent = it.ext.toUpperCase();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AI model (CLIP, runs locally in the browser)
+// ---------------------------------------------------------------------------
+let modelPromise = null;
+function loadModel() {
+  modelPromise ??= (async () => {
+    const T = await import(TRANSFORMERS_URL);
+    T.env.allowLocalModels = false;
+    // Threads need a same-origin worker script; with the library on a CDN that fails, so stay single-threaded.
+    T.env.backends.onnx.wasm.numThreads = 1;
+    const prog = {};
+    const onProgress = (p) => {
+      if (p.status !== 'progress' || !p.total) return;
+      prog[p.file] = [p.loaded, p.total];
+      let loaded = 0, total = 0;
+      for (const [l, t] of Object.values(prog)) { loaded += l; total += t; }
+      if (state.phase === 'model') setStatus(`Завантажую ШІ-модель (лише перший раз)… ${Math.round(loaded / total * 100)}%`, true);
+    };
+    // A fresh options object per model: from_pretrained mutates it, so sharing one makes the vision model load the text graph.
+    const opts = () => ({ device: 'wasm', dtype: 'q8', progress_callback: onProgress });
+    // Loaded one after another: loading both CLIP halves in parallel mixes up their ONNX sessions.
+    const tokenizer = await T.AutoTokenizer.from_pretrained(MODEL, { progress_callback: onProgress });
+    const processor = await T.AutoProcessor.from_pretrained(MODEL, { progress_callback: onProgress });
+    const textModel = await T.CLIPTextModelWithProjection.from_pretrained(MODEL, opts());
+    const visionModel = await T.CLIPVisionModelWithProjection.from_pretrained(MODEL, opts());
+    const textEmb = {};
+    for (const kind of ['photo', 'video']) {
+      for (const c of CATS[kind]) {
+        if (!c.prompts) continue;
+        const { text_embeds } = await textModel(tokenizer(c.prompts, { padding: true, truncation: true }));
+        const [n, d] = text_embeds.dims;
+        const vecs = Array.from({ length: n }, (_, i) => normalize(text_embeds.data.subarray(i * d, (i + 1) * d)));
+        textEmb[kind + ':' + c.id] = meanNorm(vecs);
+      }
+    }
+    return { T, processor, visionModel, textEmb };
+  })().catch((e) => { modelPromise = null; throw e; });
+  return modelPromise;
+}
+
+function normalize(v) {
+  let s = 0;
+  for (let i = 0; i < v.length; i++) s += v[i] * v[i];
+  s = Math.sqrt(s) || 1;
+  const out = new Float32Array(v.length);
+  for (let i = 0; i < v.length; i++) out[i] = v[i] / s;
+  return out;
+}
+function meanNorm(vecs) {
+  const out = new Float32Array(vecs[0].length);
+  for (const v of vecs) for (let i = 0; i < v.length; i++) out[i] += v[i];
+  return normalize(out);
+}
+function dot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+
+async function embedCanvas(M, canvas) {
+  const ctx = canvas.getContext('2d');
+  const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const image = new M.T.RawImage(new Uint8ClampedArray(data), width, height, 4);
+  const { pixel_values } = await M.processor(image);
+  const { image_embeds } = await M.visionModel({ pixel_values });
+  return normalize(image_embeds.data);
+}
+
+function classify(M, emb, kind) {
+  const list = CATS[kind].filter((c) => c.prompts);
+  const logits = list.map((c) => 100 * dot(emb, M.textEmb[kind + ':' + c.id]));
+  const max = Math.max(...logits);
+  const exps = logits.map((l) => Math.exp(l - max));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  let best = 0;
+  for (let i = 1; i < exps.length; i++) if (exps[i] > exps[best]) best = i;
+  return exps[best] / sum < OTHER_THRESHOLD ? 'other' : list[best].id;
+}
+
+// ---------------------------------------------------------------------------
+// Decoding photos and videos
+// ---------------------------------------------------------------------------
+function drawScaled(src, w, h, shortSide) {
+  const s = Math.min(1, shortSide / Math.min(w, h));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * s));
+  c.height = Math.max(1, Math.round(h * s));
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+async function makeThumb(src, w, h, size = 128) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const s = Math.min(w, h);
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, (w - s) / 2, (h - s) / 2, s, s, 0, 0, size, size);
+  const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.8));
+  return URL.createObjectURL(blob);
+}
+async function decodeImage(file) {
+  const bmp = await createImageBitmap(file);
+  try {
+    const clip = drawScaled(bmp, bmp.width, bmp.height, 256);
+    return { clips: [clip], thumb: await makeThumb(clip, clip.width, clip.height) };
+  } finally { bmp.close(); }
+}
+function once(el, ev, ms) {
+  return new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error('timeout')), ms);
+    el.addEventListener(ev, () => { clearTimeout(t); res(); }, { once: true });
+    el.addEventListener('error', () => { clearTimeout(t); rej(new Error('cannot decode')); }, { once: true });
+  });
+}
+async function decodeVideo(file) {
+  const url = URL.createObjectURL(file);
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.preload = 'auto';
+  try {
+    const ready = once(v, 'loadeddata', 20000);
+    v.src = url;
+    await ready;
+    if (!v.videoWidth) throw new Error('no video track');
+    const dur = Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 0;
+    const clips = [];
+    for (const f of dur > 1.5 ? [0.15, 0.5, 0.85] : [0]) {
+      if (f > 0) {
+        const seeked = once(v, 'seeked', 10000);
+        v.currentTime = Math.min(dur * f, dur - 0.05);
+        await seeked;
+      }
+      clips.push(drawScaled(v, v.videoWidth, v.videoHeight, 256));
+    }
+    const mid = clips[Math.floor(clips.length / 2)];
+    return { clips, thumb: await makeThumb(mid, mid.width, mid.height) };
+  } finally {
+    v.removeAttribute('src'); v.load();
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Size + SHA-256 of the start, middle and end of the file: fast even for big videos.
+async function quickHash(file) {
+  const CH = 1 << 20;
+  const parts = [file.slice(0, CH)];
+  if (file.size > 3 * CH) {
+    const mid = Math.floor(file.size / 2);
+    parts.push(file.slice(mid, mid + CH), file.slice(file.size - CH));
+  } else if (file.size > CH) parts.push(file.slice(CH));
+  const digest = await crypto.subtle.digest('SHA-256', await new Blob(parts).arrayBuffer());
+  return file.size + ':' + Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Animation: pile in the middle, tiles flying into cards
+// ---------------------------------------------------------------------------
+function spawnPile() {
+  const pile = $('#pile');
+  const r = pile.getBoundingClientRect();
+  const n = Math.min(state.items.length, PILE_MAX);
+  const cx = r.width / 2, cy = r.height / 2 - 10;
+  const R = Math.min(r.width, r.height) * 0.36;
+  for (let i = 0; i < n; i++) {
+    const it = state.items[Math.floor(i * state.items.length / n)];
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    const a = Math.random() * Math.PI * 2;
+    const d = R * Math.pow(Math.random(), 0.75);
+    const rot = rand(-35, 35);
+    tile.style.left = (cx + Math.cos(a) * d - 17) + 'px';
+    tile.style.top = (cy + Math.sin(a) * d - 17) + 'px';
+    tile.style.setProperty('--r', rot + 'deg');
+    tile.style.zIndex = String(Math.floor(Math.random() * 100));
+    pile.appendChild(tile);
+    it.tile = tile;
+    const fromX = rand(-1, 1) * window.innerWidth * 0.6;
+    const fromY = -window.innerHeight * rand(0.5, 0.9);
+    tile.animate(
+      [{ transform: `translate(${fromX}px, ${fromY}px) rotate(${rot * 4}deg)`, opacity: 0 },
+       { opacity: 1, offset: 0.3 },
+       { transform: `rotate(${rot}deg)`, opacity: 1 }],
+      { duration: rand(700, 1100), delay: i * (1400 / n), easing: 'cubic-bezier(.2,.7,.25,1.05)', fill: 'backwards' },
+    );
+  }
+}
+
+// Quick thumbnails so the pile shows real photos while the model downloads (videos get theirs during analysis).
+async function previewPile(items) {
+  for (const it of items) {
+    if (!it.tile) continue;
+    if (state.items !== items || state.phase === 'analyze' && it.thumb) continue;
+    if (it.kind !== 'photo') continue;
+    try {
+      const bmp = await createImageBitmap(await it.handle.getFile());
+      if (!it.thumb) it.thumb = await makeThumb(bmp, bmp.width, bmp.height, 96);
+      bmp.close();
+      if (it.tile) paintThumb(it.tile, it);
+    } catch (e) { /* not decodable here: stays a blank tile */ }
+    await tick();
+  }
+}
+
+function sendToCard(it) {
+  const card = it.dup ? dupCard : cards[it.kind][it.cat];
+  card.count++;
+  card.countEl.textContent = nf(card.count);
+  card.el.classList.add('has');
+  const idx = card.reserved++;
+  const target = (idx < SLOTS ? card.slots[idx] : card.countEl).getBoundingClientRect();
+
+  let from;
+  if (it.tile) {
+    from = it.tile.getBoundingClientRect();
+    it.tile.remove();
+    it.tile = null;
+  } else {
+    const s = $('#stage').getBoundingClientRect();
+    from = { left: s.left + s.width / 2 - 17, top: s.top + s.height / 2 - 17, width: 34, height: 34 };
+  }
+  const land = () => {
+    if (idx < SLOTS && card.slots[idx].dataset.item === undefined) fillSlot(card.slots[idx], it);
+    card.el.classList.remove('pop'); void card.el.offsetWidth; card.el.classList.add('pop');
+  };
+  if (document.hidden) return land();
+
+  const fl = document.createElement('div');
+  fl.className = 'tile';
+  paintThumb(fl, it);
+  fl.style.width = from.width + 'px';
+  fl.style.height = from.height + 'px';
+  fl.style.transformOrigin = '0 0';
+  $('#fx').appendChild(fl);
+  const dx = target.left - from.left, dy = target.top - from.top;
+  const s = Math.max(0.3, target.width / from.width);
+  const lift = Math.min(120, Math.abs(dx) * 0.25 + 30);
+  fl.animate(
+    [{ transform: `translate(${from.left}px, ${from.top}px) rotate(${rand(-30, 30)}deg) scale(1)` },
+     { transform: `translate(${from.left + dx * 0.5}px, ${from.top + dy * 0.5 - lift}px) rotate(${rand(-15, 15)}deg) scale(${(1 + s) / 2 + 0.25})`, offset: 0.5 },
+     { transform: `translate(${target.left}px, ${target.top}px) rotate(0deg) scale(${s})` }],
+    { duration: 650, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' },
+  ).finished.then(() => { fl.remove(); land(); });
+}
+
+function fillSlot(slot, it) {
+  slot.dataset.item = '';
+  slot.classList.add('filled');
+  paintThumb(slot, it);
+}
+function clearSlot(slot) {
+  delete slot.dataset.item;
+  slot.className = 'slot';
+  slot.style.backgroundImage = '';
+  slot.textContent = '';
+}
+
+// Rebuild all cards from state (after manual corrections).
+function renderCards() {
+  const all = [...Object.values(cards.photo), ...Object.values(cards.video), dupCard];
+  for (const c of all) { c.count = 0; c.reserved = 0; c.slots.forEach(clearSlot); }
+  for (const it of state.items) {
+    if (!it.cat) continue;
+    const c = it.dup ? dupCard : cards[it.kind][it.cat];
+    if (c.count < SLOTS) fillSlot(c.slots[c.count], it);
+    c.count++; c.reserved++;
+  }
+  for (const c of all) { c.countEl.textContent = nf(c.count); c.el.classList.toggle('has', c.count > 0); }
+}
+
+function petalBurst() {
+  const s = $('#stage').getBoundingClientRect();
+  const colors = ['#C67783', '#A8586A', '#8874A6', '#E7D9DA', '#ECE5F4'];
+  for (let i = 0; i < 36; i++) {
+    const p = document.createElement('i');
+    p.className = 'petal';
+    p.style.background = colors[i % colors.length];
+    p.style.left = s.left + s.width / 2 + 'px';
+    p.style.top = s.top + s.height / 2 + 'px';
+    document.body.appendChild(p);
+    const a = Math.random() * Math.PI * 2, d = rand(120, 380);
+    p.animate(
+      [{ transform: 'translate(0,0) rotate(0) scale(.4)', opacity: 1 },
+       { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d - 60}px) rotate(${rand(180, 540)}deg) scale(1)`, opacity: 1, offset: 0.55 },
+       { transform: `translate(${Math.cos(a) * d * 1.2}px, ${Math.sin(a) * d + 160}px) rotate(${rand(540, 900)}deg) scale(.8)`, opacity: 0 }],
+      { duration: rand(1600, 2400), easing: 'cubic-bezier(.2,.6,.4,1)' },
+    ).finished.then(() => p.remove());
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Flow: pick → scan → analyze → review → apply
+// ---------------------------------------------------------------------------
+function reset() {
+  for (const it of state.items) if (it.thumb) URL.revokeObjectURL(it.thumb);
+  Object.assign(state, { items: [], folders: 0, dups: 0, sorted: { photo: 0, video: 0 } });
+  $('#pile').innerHTML = '';
+  $('#fx').innerHTML = '';
+  buildCards();
+  for (const id of ['total', 'video', 'photo', 'folders', 'dups']) $('#st-' + id).textContent = '0';
+  $('#n-photo').textContent = $('#n-video').textContent = '';
+  setProgress(0);
+  $('#apply').disabled = true;
+  $('#sort').disabled = true;
+  $('#board').classList.remove('review');
+}
+
+async function pickFolder() {
+  if (!window.showDirectoryPicker) {
+    toast('Цей браузер не вміє працювати з папками. Відкрий сторінку в Chrome або Edge.', 6000);
+    return;
+  }
+  let dir;
+  try {
+    dir = await window.showDirectoryPicker({ id: 'petal-sort', mode: 'readwrite', startIn: 'pictures' });
+  } catch (e) {
+    if (e.name !== 'AbortError') toast('Не вдалося відкрити папку: ' + e.message, 6000);
+    return;
+  }
+  await start(dir);
+}
+
+async function start(dir) {
+  reset();
+  state.dir = dir;
+  state.phase = 'scan';
+  $('#pick').disabled = true;
+  $('#title').innerHTML = 'Розбираю папку <em></em>';
+  $('#title em').textContent = dir.name;
+  $('#crumb').textContent = 'сканую';
+  $('#hint').style.opacity = 0;
+  setStatus('Сканую папку…', true);
+  loadModel().catch(() => {}); // start downloading while we scan
+
+  let skipped = 0;
+  for await (const [name, handle] of dir.entries()) {
+    if (handle.kind !== 'file' || name.startsWith('.')) continue;
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+    const kind = PHOTO_EXT.has(ext) ? 'photo' : VIDEO_EXT.has(ext) ? 'video' : null;
+    if (!kind) { skipped++; continue; }
+    state.items.push({ name, handle, kind, ext, cat: null, dup: false, thumb: null, tile: null });
+  }
+  state.items.sort((a, b) => a.name.localeCompare(b.name, 'uk', { numeric: true }));
+  state.skipped = skipped;
+  setStat('total', state.items.length);
+  const nPhoto = state.items.filter((i) => i.kind === 'photo').length;
+  $('#n-photo').textContent = nPhoto ? nf(nPhoto) + ' шт.' : '';
+  $('#n-video').textContent = state.items.length - nPhoto ? nf(state.items.length - nPhoto) + ' шт.' : '';
+
+  if (!state.items.length) {
+    setStatus(skipped ? `Тут немає фото чи відео (лише ${nf(skipped)} інших файлів)` : 'Папка порожня');
+    state.phase = 'idle';
+    $('#pick').disabled = false;
+    $('#crumb').textContent = 'готова';
+    $('#hint').style.opacity = 1;
+    return;
+  }
+  spawnPile();
+  previewPile(state.items);
+
+  state.phase = 'ready';
+  $('#crumb').textContent = 'усе зібрано';
+  $('#pick').disabled = false;
+  $('#sort').disabled = false;
+  setStatus(`Зібрала ${nf(state.items.length)} файлів. Натисни «Сортувати»`);
+}
+
+async function runSort() {
+  if (state.phase !== 'ready') return;
+  state.phase = 'model';
+  $('#sort').disabled = true;
+  $('#pick').disabled = true;
+  $('#crumb').textContent = 'готую ШІ';
+  setStatus('Завантажую ШІ-модель (лише перший раз)…', true);
+  let M;
+  try {
+    M = await loadModel();
+  } catch (e) {
+    console.error(e);
+    state.phase = 'ready';
+    $('#sort').disabled = false;
+    $('#pick').disabled = false;
+    setStatus('Не вдалося завантажити ШІ-модель');
+    toast('Не вдалося завантажити модель — перевір інтернет і спробуй ще раз.', 7000);
+    return;
+  }
+  await analyze(M);
+}
+
+async function analyze(M) {
+  state.phase = 'analyze';
+  $('#crumb').textContent = 'розбираю';
+  const items = state.items;
+  const seen = new Map();
+  const t0 = performance.now();
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    let eta = '';
+    if (i >= 3) {
+      const left = (performance.now() - t0) / i * (items.length - i) / 1000;
+      eta = left > 90 ? ` · ще ≈ ${Math.round(left / 60)} хв` : left > 5 ? ` · ще ≈ ${Math.round(left)} с` : '';
+    }
+    setStatus(`Розбираю ${nf(i + 1)} з ${nf(items.length)}${eta}`, true);
+    try {
+      const file = await it.handle.getFile();
+      it.size = file.size;
+      const hash = await quickHash(file);
+      const original = seen.get(hash);
+      if (original) {
+        it.dup = true;
+        it.cat = original.cat;
+        it.thumb = original.thumb ? await fetch(original.thumb).then((r) => r.blob()).then(URL.createObjectURL) : null;
+        state.dups++;
+      } else {
+        seen.set(hash, it);
+        const decoded = it.kind === 'photo' ? await decodeImage(file) : await decodeVideo(file);
+        if (it.thumb) URL.revokeObjectURL(decoded.thumb); else it.thumb = decoded.thumb;
+        if (SCREEN_RE.test(it.name)) it.cat = 'screens';
+        else {
+          const embs = [];
+          for (const c of decoded.clips) embs.push(await embedCanvas(M, c));
+          it.cat = classify(M, meanNorm(embs), it.kind);
+        }
+      }
+    } catch (e) {
+      console.warn('Не вдалося прочитати', it.name, e);
+      it.cat ??= SCREEN_RE.test(it.name) ? 'screens' : 'other';
+    }
+    if (it.tile && it.thumb) paintThumb(it.tile, it);
+    sendToCard(it);
+    state.sorted[it.kind]++;
+    setStat(it.kind, state.sorted[it.kind]);
+    setStat('dups', state.dups);
+    setProgress((i + 1) / items.length);
+    await tick();
+  }
+
+  state.phase = 'review';
+  $('#board').classList.add('review');
+  $('#crumb').textContent = 'перевірка';
+  $('#pick').disabled = false;
+  $('#apply').disabled = false;
+  $('#applyNote').textContent = 'Натисни на категорію, щоб переглянути й виправити, що лежить не там.';
+  setStatus(`Готово! Перевір категорії й натисни «Розкласти»`);
+  toast(`Розібрала ${nf(items.length)} файлів${state.dups ? `, знайшла ${nf(state.dups)} дублікатів` : ''}`);
+}
+
+async function apply() {
+  if (state.phase !== 'review') return;
+  state.phase = 'apply';
+  $('#board').classList.remove('review');
+  $('#apply').disabled = true;
+  $('#pick').disabled = true;
+  $('#crumb').textContent = 'розкладаю';
+  const keep = $('#keep').checked;
+  const dirs = new Map();
+
+  async function ensureDir(parts) {
+    let d = state.dir, key = '';
+    for (const p of parts) {
+      key += '/' + p;
+      if (dirs.has(key)) { d = dirs.get(key); continue; }
+      try { d = await d.getDirectoryHandle(p); }
+      catch (e) {
+        if (e.name !== 'NotFoundError') throw e;
+        d = await d.getDirectoryHandle(p, { create: true });
+        state.folders++;
+        setStat('folders', state.folders);
+      }
+      dirs.set(key, d);
+    }
+    return d;
+  }
+
+  let done = 0, failed = 0;
+  setProgress(0);
+  for (const it of state.items) {
+    const parts = it.dup ? [DUP_FOLDER] : [KIND_FOLDER[it.kind], catOf(it.kind, it.cat).name];
+    try {
+      await transfer(it, await ensureDir(parts), keep);
+    } catch (e) {
+      failed++;
+      console.warn('Не вдалося перенести', it.name, e);
+    }
+    done++;
+    setStatus(`${keep ? 'Копіюю' : 'Переношу'} ${nf(done)} з ${nf(state.items.length)}…`, true);
+    setProgress(done / state.items.length);
+    if (done % 4 === 0) await tick();
+  }
+
+  state.phase = 'done';
+  $('#pick').disabled = false;
+  $('#crumb').textContent = 'готово';
+  $('#applyNote').textContent = failed
+    ? `Не вийшло з ${nf(failed)} файлами — можливо, вони відкриті в іншій програмі. Вони лишилися на місці.`
+    : 'Готово! Можна обрати іншу папку.';
+  setStatus(failed ? `Готово, але ${nf(failed)} файлів пропущено` : `Готово. Усе розкладено по ${nf(dirs.size)} папках`);
+  petalBurst();
+}
+
+async function exists(dir, name) {
+  try { await dir.getFileHandle(name); return true; }
+  catch (e) { return e.name !== 'NotFoundError'; }
+}
+async function freeName(dir, name) {
+  if (!await exists(dir, name)) return name;
+  const dot = name.lastIndexOf('.');
+  const base = dot > 0 ? name.slice(0, dot) : name, ext = dot > 0 ? name.slice(dot) : '';
+  for (let i = 1; ; i++) {
+    const n = `${base} (${i})${ext}`;
+    if (!await exists(dir, n)) return n;
+  }
+}
+async function transfer(it, dest, keep) {
+  const name = await freeName(dest, it.name);
+  if (!keep && typeof it.handle.move === 'function') {
+    try { await it.handle.move(dest, name); return; } catch (e) { /* fall back to copy + delete */ }
+  }
+  const file = await it.handle.getFile();
+  const fh = await dest.getFileHandle(name, { create: true });
+  try {
+    await file.stream().pipeTo(await fh.createWritable());
+    if ((await fh.getFile()).size !== file.size) throw new Error('copy size mismatch');
+  } catch (e) {
+    await dest.removeEntry(name).catch(() => {});
+    throw e;
+  }
+  if (!keep) await state.dir.removeEntry(it.name);
+}
+
+// ---------------------------------------------------------------------------
+// Review modal: move files between categories before applying
+// ---------------------------------------------------------------------------
+let modalItems = [];
+function openModal(kind, catId) {
+  if (state.phase !== 'review') return;
+  const isDup = catId === 'dups';
+  modalItems = state.items.filter((it) => isDup ? it.dup : !it.dup && it.kind === kind && it.cat === catId);
+  if (!modalItems.length) return;
+  const title = $('#mTitle');
+  title.innerHTML = '<em></em> · ';
+  title.querySelector('em').textContent = isDup ? 'Дублікати' : catOf(kind, catId).name;
+  title.append(nf(modalItems.length));
+  $('#mHint').textContent = isDup
+    ? 'Копії файлів, які вже є в цій папці. Підуть у «Дублікати».'
+    : 'Натисни на файли, які лежать не там';
+
+  const grid = $('#mGrid');
+  grid.innerHTML = '';
+  for (const it of modalItems) {
+    const b = document.createElement('button');
+    b.className = 'pick';
+    paintThumb(b, it);
+    const label = document.createElement('span');
+    label.textContent = it.name;
+    b.appendChild(label);
+    b.title = it.name;
+    b.onclick = () => { b.classList.toggle('sel'); it._sel = b.classList.contains('sel'); updateMove(); };
+    it._sel = false;
+    grid.appendChild(b);
+  }
+  const sel = $('#mTarget');
+  sel.innerHTML = '';
+  const kinds = isDup ? [...new Set(modalItems.map((i) => i.kind))] : [kind];
+  for (const k of kinds) {
+    const g = document.createElement('optgroup');
+    g.label = KIND_FOLDER[k];
+    for (const c of CATS[k]) {
+      if (!isDup && c.id === catId) continue;
+      g.appendChild(new Option(c.name, k + ':' + c.id));
+    }
+    sel.appendChild(g);
+  }
+  if (!isDup) sel.appendChild(new Option(DUP_FOLDER, 'dups'));
+  updateMove();
+  $('#modal').classList.add('open');
+}
+function updateMove() {
+  const n = modalItems.filter((i) => i._sel).length;
+  $('#mMove').disabled = !n;
+  $('#mMove').textContent = n ? `Перенести ${nf(n)}` : 'Перенести';
+}
+function closeModal() { $('#modal').classList.remove('open'); }
+
+$('#mMove').onclick = () => {
+  const [k, id] = $('#mTarget').value.split(':');
+  for (const it of modalItems) {
+    if (!it._sel) continue;
+    if (k === 'dups') { if (!it.dup) state.dups++; it.dup = true; continue; }
+    if (it.kind !== k) continue; // a photo can't go into a video category
+    if (it.dup) state.dups--;
+    it.dup = false;
+    it.cat = id;
+  }
+  setStat('dups', state.dups);
+  renderCards();
+  closeModal();
+};
+$('#mClose').onclick = closeModal;
+$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+$('#pick').onclick = pickFolder;
+$('#apply').onclick = apply;
+$('#sort').onclick = runSort;
+buildCards();
+
+// Handy for testing with any directory handle (e.g. navigator.storage.getDirectory()).
+window.petalSort = { start, state };
+</script>
+</body>
+</html>
